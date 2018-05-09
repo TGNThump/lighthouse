@@ -49,21 +49,29 @@ class SchemaStitcher
      */
     protected function appSchema($path)
     {
-        try {
-            $schema = file_get_contents($path);
+        try{
+            $schema = "";
+            $imports = [];
+
+            if (is_dir($path)){
+                $imports = collect(scandir($path));
+            } else {
+                $schema = file_get_contents($path);
+                $imports = collect(explode("\n", $schema))->filter(function ($line) {
+                    return 0 === strpos(trim($line), '#import');
+                })->map(function ($import) {
+                    return trim(str_replace('#import', '', $import));
+                });
+            }
+
+            $imports = $imports->map(function ($file) use ($path) {
+                return $this->appSchema(realpath(dirname($path).'/'.$file));
+            })->implode("\n");
+
+            return $imports."\n".$schema;
         } catch (\Exception $e) {
             // TODO: Publish demo/startup file with a minimal.
             return '';
         }
-
-        $imports = collect(explode("\n", $schema))->filter(function ($line) {
-            return 0 === strpos(trim($line), '#import');
-        })->map(function ($import) {
-            return trim(str_replace('#import', '', $import));
-        })->map(function ($file) use ($path) {
-            return $this->appSchema(realpath(dirname($path).'/'.$file));
-        })->implode("\n");
-
-        return $imports."\n".$schema;
     }
 }
