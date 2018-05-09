@@ -54,7 +54,9 @@ class SchemaStitcher
             $imports = [];
 
             if (is_dir($path)){
-                $imports = collect(scandir($path));
+                $imports = collect(scandir($path))->filter(function($import) {
+                    return !is_dir($import);
+                });
             } else {
                 $schema = file_get_contents($path);
                 $imports = collect(explode("\n", $schema))->filter(function ($line) {
